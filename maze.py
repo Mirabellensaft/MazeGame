@@ -1,116 +1,128 @@
 import pyb
 import lcd160cr
-from math import sqrt # so we don't need to resolve math.sqrt on every loop iteration later
 from random import randint, randrange
 
 lcd = lcd160cr.LCD160CR('X')
-accel = pyb.Accel()
+
+
+def shuffle(liste):
+    new_liste = []
+
+    for i in range(len(liste)):
+        p = randint(0, len(liste)-1)
+        new_liste.append(liste[p])
+        del liste[p]
+
+    return new_liste
 
 def make_filled_maze(w, h):
 
     visited = []
+    CellCenters = []
 
     ver = []
     hor = []
 
+    # generate vertical walls
     for y in range(0, h, 20):
         for x in range(0, w, 20):
             ver.append((x, y, x, y+20))
 
+    # generate horizontal walls
     for x in range(0, w, 20):
         for y in range(0, h, 20):
             hor.append((x, y, x+20, y))
 
-
-    print (len(hor), len(ver), len(visited))
+    # generate list with coordinates of cell centers
+    for x in range(10, w, 20):
+        for y in range(10, h, 20):
+            CellCenters.append((x,y))
 
     def walk(x, y):
-        print ((x, y))
 
+        visited.append((x, y))
 
-        def shuffle(liste):
-            new_liste = []
-
-            for i in range(len(liste)):
-                p = randint(0, len(liste)-1)
-                new_liste.append(liste[p])
-                del liste[p]
-
-            return new_liste
-
-
-        d = [(x - 20, y), (x, y + 20), (x + 20, y), (x, y - 20)]
-        d = shuffle(d)
+        NeighborCells = [(x - 20, y), (x, y + 20), (x + 20, y), (x, y - 20)]
+        NeighborCells = shuffle(NeighborCells)
+        print (NeighborCells, x, y)
 
         besetzteNachbarn = 0
 
-        for (xx, yy) in d:
+        for (xx, yy) in NeighborCells:
+            print("xx, yy", xx, yy)
+
+            if len(CellCenters) == len(visited):
+                # print("visitd", len(visited))
+                # print("CellCenters", len(CellCenters))
+                print ("Längen gleich")
+                break
+
+            elif besetzteNachbarn == 4:
+                print ("Nachbarschaft zu!")
+                letzterX = visited[-1][0]
+                letzterY = visited[-1][1]
+
+                visited[0] = visited[-1]
+
+                visited.pop()
 
 
-            if (xx, yy) in visited:
+                walk(letzterX, letzterY)
+
+            elif (xx, yy) not in CellCenters:
                 besetzteNachbarn += 1
-                if besetzteNachbarn > 3:
-                    letzterX = visited[-1][0]
-                    letzterY = visited[-1][1]
-                    print (visited)
-                    visited[0] = visited[-1]
-                    print (visited)
-                    visited.pop()
-                    print (visited)
-
-                    walk(letzterX, letzterY)
-
+                print ("not on List")
                 continue
 
-            if xx < 0 or yy < 0 or yy > h or xx > w:
+            elif (xx, yy) in visited:
                 besetzteNachbarn += 1
-                if besetzteNachbarn > 3:
-                    letzterX = visited[-1][0]
-                    letzterY = visited[-1][1]
-                    print (visited)
-                    visited[0] = visited[-1]
-                    print (visited)
-                    visited.pop()
-                    print (visited)
-
+                print ("already in List")
                 continue
 
-            if xx == x+20:
 
-                print (x+10, y-10, x+10, y+10)
+            elif xx == x+20:
+
                 try:
                     ver.remove((x+10, y-10, x+10, y+10))
                 except ValueError:
-                    break
+                    print ("ValueError")
+                    continue
 
-            if xx == x-20:
-                print ((x-10, y-10, x-10, y+10))
+            elif xx == x-20:
                 try:
                     ver.remove((x-10, y-10, x-10, y+10))
                 except ValueError:
-                    break
+                    #print ((x,y), (x-10, y-10, x-10, y+10))
+                    print ("ValueError")
+                    continue
 
-            if yy == y+20:
+            elif yy == y+20:
 
-                print ((x-10, y+10, x+10, y+10))
                 try:
                     hor.remove((x-10, y+10, x+10, y+10))
                 except ValueError:
-                    break
+                    #print ((x,y), (x-10, y+10, x+10, y+10))
+                    print ("ValueError")
+                    continue
 
-            if yy == y-20:
+            elif yy == y-20:
 
-                print (x-10, y-10, x+10, y-10)
                 try:
                     hor.remove((x-10, y-10, x+10, y-10))
                 except ValueError:
-                    break
+                    print ("ValueError")
+                    #print ((x,y), (x-10, y-10, x+10, y-10))
+                    continue
 
 
 
-            visited.append((x, y))
-            print (xx, yy , "xx,yy")
-            print (len(hor), len(ver), len(visited))
+            lcd.erase()
+            for i in ver:
+                lcd.line(i[0], i[1], i[2], i[3])
+
+            for i in hor:
+                lcd.line(i[0], i[1], i[2], i[3])
+
             walk(xx, yy)
 
         for i in ver:
@@ -122,10 +134,10 @@ def make_filled_maze(w, h):
         lcd.line(w, 0, w, h)
         lcd.line(0, h, w, h)
 
+    RandomStartCell = CellCenters[randint(0, len(CellCenters))]
+    walk(RandomStartCell[0], RandomStartCell[1])
 
-    walk(randrange(30, w-30, 20), randrange(30, h-30, 20))
-
-    print (len(hor), len(ver), len(visited))
+    print ("visited", visited)
 
 
 fg = lcd.rgb(255, 255, 255)
