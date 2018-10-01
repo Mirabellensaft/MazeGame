@@ -55,7 +55,7 @@ def make_filled_maze(w, h):
 
         """walks through the grid, deleting walls to create a maze."""
 
-        print ('was ich wiisen', x,y)
+        #print ('xy', x,y)
 
         visited.append((x, y))
 
